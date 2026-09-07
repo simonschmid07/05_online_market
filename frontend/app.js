@@ -157,6 +157,7 @@ async function deleteItem(itemId) {
   try {
     const response = await fetch(`${config.apiBaseUrl}/items/${itemId}`, { method: "DELETE" });
     if (!response.ok) throw new Error(`Backend returned ${response.status}`);
+    if (String(editingId) === String(itemId)) resetForm();
     await loadItems();
     setStatus(`${config.entity} deleted.`, "success");
   } catch (error) {
