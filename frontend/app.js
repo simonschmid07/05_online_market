@@ -35,6 +35,7 @@ function buildForm() {
     const input = document.createElement("input");
     input.name = field.name;
     input.type = field.type === "number" ? "number" : "text";
+    if (field.name === "price") input.step = "0.01";
     input.placeholder = field.label;
     input.required = Boolean(field.required);
 
