@@ -169,7 +169,9 @@ async function runAction(itemId, actionId) {
       method: "POST",
     });
     if (!response.ok) throw new Error(`Backend returned ${response.status}`);
+    const updatedItem = response.json();
     await loadItems();
+    if (String(editingId) === String(itemId)) fillForm(updatedItem)
     setStatus("Action completed.", "success");
   } catch (error) {
     setStatus(`Action failed: ${error.message}`, "error");
