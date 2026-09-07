@@ -35,6 +35,7 @@ function buildForm() {
     const input = document.createElement("input");
     input.name = field.name;
     input.type = field.type === "number" ? "number" : "text";
+    if (field.name === "price") input.step = "0.01";
     input.placeholder = field.label;
     input.required = Boolean(field.required);
 
@@ -156,6 +157,7 @@ async function deleteItem(itemId) {
   try {
     const response = await fetch(`${config.apiBaseUrl}/items/${itemId}`, { method: "DELETE" });
     if (!response.ok) throw new Error(`Backend returned ${response.status}`);
+    if (String(editingId) === String(itemId)) resetForm();
     await loadItems();
     setStatus(`${config.entity} deleted.`, "success");
   } catch (error) {
@@ -169,9 +171,9 @@ async function runAction(itemId, actionId) {
       method: "POST",
     });
     if (!response.ok) throw new Error(`Backend returned ${response.status}`);
-
     const updatedItem = await response.json();
     await loadItems();
+    if (String(editingId) === String(itemId)) fillForm(updatedItem)
 
     if (updatedItem.stock === 0) {
       setStatus("Action failed: stock is 0.", "error");
