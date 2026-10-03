@@ -3,12 +3,15 @@ pipeline {
 
     options {
         timestamps()
+        disableConcurrentBuilds()
+        buildDiscarder(logRotator(numToKeepStr: '10', artifactNumToKeepStr: '5'))
     }
 
     stages {
         stage('Checkout') {
             steps {
                 checkout scm
+                sh 'git log -1 --oneline'
             }
         }
 
@@ -23,11 +26,14 @@ pipeline {
             }
         }
 
-        stage('Lint') {
+        stage('Lint / static check') {
             steps {
-                sh '''
+                sh '''#!/bin/bash
+                    set -euo pipefail
+                    mkdir -p evidence/reports
                     . .venv/bin/activate
-                    ruff check backend
+                    ruff check backend 2>&1 | tee evidence/reports/ruff.txt
+                    black --check backend 2>&1 | tee evidence/reports/black.txt
                 '''
             }
         }
@@ -45,10 +51,27 @@ pipeline {
         stage('Build artifact') {
             steps {
                 sh '''
+                    # remove zips of earlier builds, otherwise old artifacts stay in the workspace
+                    rm -rf evidence/artifacts
                     mkdir -p evidence/artifacts
-                    zip -r evidence/artifacts/app-${BUILD_NUMBER}.zip \
-                        backend frontend docker-compose.yml README.md
+
+                    VERSION=$(grep '^APP_VERSION=' .env.example | cut -d= -f2)
+                    COMMIT=$(git rev-parse --short HEAD)
+                    NAME="online-market-${VERSION}-build-${BUILD_NUMBER}-${COMMIT}.zip"
+
+                    zip -r "evidence/artifacts/${NAME}" \
+                        backend frontend docker-compose.yml README.md .env.example \
+                        -x '*/__pycache__/*' '*.pyc'
+
+                    echo "Created artifact: ${NAME}"
+                    unzip -l "evidence/artifacts/${NAME}"
                 '''
+            }
+        }
+
+        stage('Archive artifact') {
+            steps {
+                archiveArtifacts artifacts: 'evidence/artifacts/*.zip, evidence/reports/*', fingerprint: true
             }
         }
     }
@@ -56,11 +79,12 @@ pipeline {
     post {
         always {
             junit allowEmptyResults: true, testResults: 'evidence/reports/*.xml'
-            archiveArtifacts(
-                artifacts: 'evidence/artifacts/*.zip,evidence/reports/*.xml',
-                allowEmptyArchive: true,
-                fingerprint: true
-            )
+        }
+        success {
+            echo 'Build successful: artifact and reports are archived.'
+        }
+        failure {
+            echo 'Build FAILED: check the console output of the red stage.'
         }
     }
 }
