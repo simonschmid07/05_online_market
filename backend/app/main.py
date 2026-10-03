@@ -4,48 +4,62 @@ from typing import Any
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-
 APP_NAME = os.getenv("APP_NAME", "Online Market Catalog")
 APP_VERSION = os.getenv("APP_VERSION", "0.2.0")
 
-FIELD_DEFINITIONS: list[dict[str, Any]] =     [{'name': 'name', 'label': 'Product name', 'type': 'text', 'required': True},
-     {'name': 'description', 'label': 'Description', 'type': 'text', 'required': True},
-     {'name': 'price', 'label': 'Price', 'type': 'number', 'required': True, 'min': 0},
-     {'name': 'category', 'label': 'Category', 'type': 'text', 'required': True},
-     {'name': 'stock', 'label': 'Stock', 'type': 'number', 'required': False, 'min': 0}]
+FIELD_DEFINITIONS: list[dict[str, Any]] = [
+    {"name": "name", "label": "Product name", "type": "text", "required": True},
+    {"name": "description", "label": "Description", "type": "text", "required": True},
+    {"name": "price", "label": "Price", "type": "number", "required": True, "min": 0},
+    {"name": "category", "label": "Category", "type": "text", "required": True},
+    {"name": "stock", "label": "Stock", "type": "number", "required": False, "min": 0},
+]
 
-ACTION_DEFINITIONS: list[dict[str, Any]] =     [{'id': 'sell_one',
-      'label': 'Sell one',
-      'type': 'increment',
-      'field': 'stock',
-      'amount': -1,
-      'min': 0},
-     {'id': 'discount',
-      'label': '10% discount',
-      'type': 'multiply',
-      'field': 'price',
-      'factor': 0.9,
-      'min': 0}]
+ACTION_DEFINITIONS: list[dict[str, Any]] = [
+    {
+        "id": "sell_one",
+        "label": "Sell one",
+        "type": "increment",
+        "field": "stock",
+        "amount": -1,
+        "min": 0,
+    },
+    {
+        "id": "discount",
+        "label": "10% discount",
+        "type": "multiply",
+        "field": "price",
+        "factor": 0.9,
+        "min": 0,
+    },
+]
 
-SEED_ITEMS: list[dict[str, Any]] =     [{'name': 'Desk lamp',
-      'description': 'Adjustable LED lamp',
-      'price': 39,
-      'category': 'Home office',
-      'stock': 12},
-     {'name': 'Travel mug',
-      'description': 'Insulated stainless steel mug',
-      'price': 24,
-      'category': 'Accessories',
-      'stock': 30},
-     {'name': 'Notebook set',
-      'description': 'Three A5 notebooks',
-      'price': 14,
-      'category': 'Stationery',
-      'stock': 45}]
+SEED_ITEMS: list[dict[str, Any]] = [
+    {
+        "name": "Desk lamp",
+        "description": "Adjustable LED lamp",
+        "price": 39,
+        "category": "Home office",
+        "stock": 12,
+    },
+    {
+        "name": "Travel mug",
+        "description": "Insulated stainless steel mug",
+        "price": 24,
+        "category": "Accessories",
+        "stock": 30,
+    },
+    {
+        "name": "Notebook set",
+        "description": "Three A5 notebooks",
+        "price": 14,
+        "category": "Stationery",
+        "stock": 45,
+    },
+]
 
 ITEMS: list[dict[str, Any]] = [
-    {"id": index + 1, **item}
-    for index, item in enumerate(SEED_ITEMS)
+    {"id": index + 1, **item} for index, item in enumerate(SEED_ITEMS)
 ]
 
 app = FastAPI(title=APP_NAME, version=APP_VERSION)
@@ -87,7 +101,9 @@ def _validate_payload(payload: dict[str, Any]) -> dict[str, Any]:
         value = payload.get(name)
 
         if field.get("required") and (value is None or str(value).strip() == ""):
-            raise HTTPException(status_code=422, detail=f"Missing required field: {name}")
+            raise HTTPException(
+                status_code=422, detail=f"Missing required field: {name}"
+            )
 
         if value is None or value == "":
             cleaned[name] = None
@@ -97,7 +113,9 @@ def _validate_payload(payload: dict[str, Any]) -> dict[str, Any]:
             try:
                 number = float(value)
             except (TypeError, ValueError) as exc:
-                raise HTTPException(status_code=422, detail=f"Field {name} must be numeric") from exc
+                raise HTTPException(
+                    status_code=422, detail=f"Field {name} must be numeric"
+                ) from exc
 
             minimum = field.get("min")
             maximum = field.get("max")

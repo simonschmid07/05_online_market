@@ -1,7 +1,5 @@
-from fastapi.testclient import TestClient
-
 from app.main import app
-
+from fastapi.testclient import TestClient
 
 client = TestClient(app)
 
@@ -28,7 +26,16 @@ def test_create_item_requires_mandatory_fields():
 
 
 def test_create_update_and_delete_item():
-    create_response = client.post("/items", json={"name": "New product", "description": "Adjustable LED lamp", "price": 39, "category": "Home office", "stock": 12})
+    create_response = client.post(
+        "/items",
+        json={
+            "name": "New product",
+            "description": "Adjustable LED lamp",
+            "price": 39,
+            "category": "Home office",
+            "stock": 12,
+        },
+    )
 
     assert create_response.status_code == 201
     item_id = create_response.json()["id"]
