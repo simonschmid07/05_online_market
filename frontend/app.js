@@ -174,7 +174,12 @@ async function runAction(itemId, actionId) {
     const updatedItem = await response.json();
     await loadItems();
     if (String(editingId) === String(itemId)) fillForm(updatedItem)
-    setStatus("Action completed.", "success");
+
+    if (updatedItem.stock === 0) {
+      setStatus("Action failed: stock is 0.", "error");
+    } else {
+      setStatus("Action completed.", "success");
+    }
   } catch (error) {
     setStatus(`Action failed: ${error.message}`, "error");
   }
